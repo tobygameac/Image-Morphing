@@ -1,0 +1,10 @@
+*.swp
+*.sdf
+*.opensdf
+*.log
+*.tlog
+*.cache
+
+.vs/
+data/
+temp/
