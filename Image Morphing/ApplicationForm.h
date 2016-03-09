@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdlib>
+#include <ctime>
+
 #include <opencv\cv.hpp>
 
 #include <msclr\marshal_cppstd.h>
@@ -12,6 +15,21 @@ namespace ImageMorphing {
   cv::Mat resized_source_image;
   cv::Mat resized_destination_image;
 
+  cv::Mat source_features_image;
+  cv::Mat destination_features_image;
+
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > source_feature_lines;
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > destination_feature_lines;
+
+  std::pair<cv::Point2f, cv::Point2f> last_source_feature_line;
+  std::pair<cv::Point2f, cv::Point2f> last_destination_feature_line;
+
+  std::vector<cv::Vec3b> feature_colors;
+
+  bool is_drawing_source_features;
+  bool is_drawing_destination_features;
+
+  const size_t FEATURE_LINE_THICKNESS = 3;
   const size_t PICTURE_BOX_LOCATION_GAP = 50;
 
   using namespace System;
@@ -34,7 +52,11 @@ namespace ImageMorphing {
 
     void OnButtonsClick(System::Object ^sender, System::EventArgs ^e);
 
+    void OnMouseDown(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e);
+
     void AdjustImagesSize();
+
+    void DrawFeatures();
 
     System::Drawing::Bitmap ^CVMatToBitmap(const cv::Mat &mat);
 
