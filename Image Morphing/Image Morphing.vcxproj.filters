@@ -18,6 +18,9 @@
     <ClInclude Include="ApplicationForm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="morphing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationForm.cpp">
