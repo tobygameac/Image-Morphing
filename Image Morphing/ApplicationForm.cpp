@@ -13,9 +13,15 @@ namespace ImageMorphing {
 
   ApplicationForm::ApplicationForm() {
     InitializeComponent();
-    
+
     open_source_image_tool_strip_menu_item_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
     open_destination_image_tool_strip_menu_item_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+
+    start_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+    clear_features_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+
+    source_picture_box_->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
+    destination_picture_box_->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
 
     source_picture_box_->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
     destination_picture_box_->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
@@ -48,6 +54,32 @@ namespace ImageMorphing {
 
         AdjustImagesSize();
       }
+    } else if (sender == start_button_) {
+      for (double t = 0; t <= 1; t += (1.0 / System::Decimal::ToDouble(morphing_steps_numeric_up_down_->Value))) {
+        Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
+      }
+    } else if (sender == clear_features_button_) {
+      source_feature_lines.clear();
+      destination_feature_lines.clear();
+
+      is_drawing_source_features = false;
+      is_drawing_destination_features = false;
+
+      PaintPictureBoxWithFeatures();
+    }
+  }
+
+  void ApplicationForm::OnMouseMove(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e) {
+    if (sender == source_picture_box_) {
+      if (is_drawing_source_features) {
+        last_source_feature_line.second = cv::Point(e->X, e->Y);
+        PaintPictureBoxWithFeatures();
+      }
+    } else if (sender == destination_picture_box_) {
+      if (is_drawing_destination_features) {
+        last_destination_feature_line.second = cv::Point(e->X, e->Y);
+        PaintPictureBoxWithFeatures();
+      }
     }
   }
 
@@ -58,7 +90,7 @@ namespace ImageMorphing {
         if (is_drawing_source_features) {
           last_source_feature_line.second = cv::Point(e->X, e->Y);
           source_feature_lines.push_back(last_source_feature_line);
-          DrawFeatures();
+          PaintPictureBoxWithFeatures();
         } else {
           last_source_feature_line.first = cv::Point(e->X, e->Y);
         }
@@ -67,7 +99,7 @@ namespace ImageMorphing {
         if (is_drawing_destination_features) {
           last_destination_feature_line.second = cv::Point(e->X, e->Y);
           destination_feature_lines.push_back(last_destination_feature_line);
-          DrawFeatures();
+          PaintPictureBoxWithFeatures();
         } else {
           last_destination_feature_line.first = cv::Point(e->X, e->Y);
         }
@@ -78,13 +110,13 @@ namespace ImageMorphing {
       if (sender == source_picture_box_) {
         if (source_feature_lines.size()) {
           source_feature_lines.pop_back();
-          DrawFeatures();
+          PaintPictureBoxWithFeatures();
         }
         is_drawing_source_features = false;
       } else if (sender == destination_picture_box_) {
         if (destination_feature_lines.size()) {
           destination_feature_lines.pop_back();
-          DrawFeatures();
+          PaintPictureBoxWithFeatures();
         }
         is_drawing_destination_features = false;
       }
@@ -96,25 +128,36 @@ namespace ImageMorphing {
       return;
     }
 
+    start_button_->Enabled = true;
+
     const size_t ORIGINAL_SOURCE_IMAGE_AREA = (size_t)original_source_image.rows * (size_t)original_source_image.cols;
     const size_t ORIGINAL_DESTINATION_IMAGE_AREA = (size_t)original_destination_image.rows * (size_t)original_destination_image.cols;
-    const cv::Size RESIZED_IMAGE_SIZE = (ORIGINAL_SOURCE_IMAGE_AREA >= ORIGINAL_DESTINATION_IMAGE_AREA) ? original_source_image.size() : original_destination_image.size();
+    const cv::Size RESIZED_IMAGE_SIZE = (ORIGINAL_SOURCE_IMAGE_AREA <= ORIGINAL_DESTINATION_IMAGE_AREA) ? original_source_image.size() : original_destination_image.size();
+
     cv::resize(original_source_image, resized_source_image, RESIZED_IMAGE_SIZE);
     cv::resize(original_destination_image, resized_destination_image, RESIZED_IMAGE_SIZE);
 
     destination_picture_box_->Location = System::Drawing::Point(source_picture_box_->Location.X + resized_source_image.cols + PICTURE_BOX_LOCATION_GAP, source_picture_box_->Location.Y);
-  
-    DrawFeatures();
+
+    PaintPictureBoxWithFeatures();
   }
 
-  void ApplicationForm::DrawFeatures() {
+  void ApplicationForm::PaintPictureBoxWithFeatures() {
     source_features_image = resized_source_image.clone();
     destination_features_image = resized_destination_image.clone();
 
-    const size_t MAX_FEATURE_LINES_COUNT = std::max(source_feature_lines.size(), destination_feature_lines.size());
+    const size_t MAX_FEATURE_LINES_COUNT = std::max(source_feature_lines.size(), destination_feature_lines.size()) + 1;
 
     for (size_t i = feature_colors.size(); i < MAX_FEATURE_LINES_COUNT; ++i) {
       feature_colors.push_back(cv::Vec3b(rand() % 256, rand() % 256, rand() % 256));
+    }
+
+    if (is_drawing_source_features) {
+      cv::line(source_features_image, last_source_feature_line.first, last_source_feature_line.second, feature_colors[source_feature_lines.size()], FEATURE_LINE_THICKNESS);
+    }
+
+    if (is_drawing_destination_features) {
+      cv::line(destination_features_image, last_destination_feature_line.first, last_destination_feature_line.second, feature_colors[destination_feature_lines.size()], FEATURE_LINE_THICKNESS);
     }
 
     for (size_t i = 0; i < source_feature_lines.size(); ++i) {
@@ -130,12 +173,35 @@ namespace ImageMorphing {
   }
 
   System::Drawing::Bitmap ^ApplicationForm::CVMatToBitmap(const cv::Mat &mat) {
-    return gcnew System::Drawing::Bitmap(mat.cols, mat.rows, mat.step, System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr)mat.data);
+    //return gcnew System::Drawing::Bitmap(mat.cols, mat.rows, mat.step, System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr)mat.bitmap_data);
+    
+    if (mat.type() != CV_8UC3) {
+      throw gcnew NotSupportedException("Only images of type CV_8UC3 are supported for conversion to Bitmap");
+    }
+
+    // Create the bitmap and get the pointer to the bitmap
+    System::Drawing::Imaging::PixelFormat pixel_format(System::Drawing::Imaging::PixelFormat::Format24bppRgb);
+
+    System::Drawing::Bitmap ^bitmap = gcnew System::Drawing::Bitmap(mat.cols, mat.rows, pixel_format);
+
+    System::Drawing::Imaging::BitmapData ^bitmap_data = bitmap->LockBits(System::Drawing::Rectangle(0, 0, mat.cols, mat.rows), System::Drawing::Imaging::ImageLockMode::WriteOnly, pixel_format);
+
+    unsigned char *source_pointer = mat.data;
+
+    unsigned char *destination_pointer = reinterpret_cast<unsigned char*>(bitmap_data->Scan0.ToPointer());
+
+    for (int r = 0; r < bitmap_data->Height; ++r) {
+      memcpy(reinterpret_cast<void *>(&destination_pointer[r * bitmap_data->Stride]), reinterpret_cast<void *>(&source_pointer[r * mat.step]), mat.cols * mat.channels());
+    }
+
+    bitmap->UnlockBits(bitmap_data);
+
+    return bitmap;
   }
 
   void ApplicationForm::Test() {
-    original_source_image = cv::imread("..//data//butterfly.jpg");
-    original_destination_image = cv::imread("..//data//butterfly2.jpg");
+    original_source_image = cv::imread("..//data//woman.jpg");
+    original_destination_image = cv::imread("..//data//tiger.jpg");
     AdjustImagesSize();
   }
 }

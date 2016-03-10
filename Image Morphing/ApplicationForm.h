@@ -5,6 +5,8 @@
 
 #include <opencv\cv.hpp>
 
+#include "morphing.h"
+
 #include <msclr\marshal_cppstd.h>
 #using <mscorlib.dll>
 
@@ -52,11 +54,13 @@ namespace ImageMorphing {
 
     void OnButtonsClick(System::Object ^sender, System::EventArgs ^e);
 
+    void OnMouseMove(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e);
+
     void OnMouseDown(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e);
 
     void AdjustImagesSize();
 
-    void DrawFeatures();
+    void PaintPictureBoxWithFeatures();
 
     System::Drawing::Bitmap ^CVMatToBitmap(const cv::Mat &mat);
 
@@ -79,6 +83,9 @@ namespace ImageMorphing {
     System::Windows::Forms::MenuStrip ^files_menu_strip_;
     System::Windows::Forms::ToolStripMenuItem ^files_tool_strip_menu_item_;
     System::Windows::Forms::ToolStripMenuItem ^open_source_image_tool_strip_menu_item_;
+    System::Windows::Forms::Button ^start_button_;
+    System::Windows::Forms::NumericUpDown ^morphing_steps_numeric_up_down_;
+    System::Windows::Forms::Button ^clear_features_button_;
     System::Windows::Forms::ToolStripMenuItem ^open_destination_image_tool_strip_menu_item_;
 
 #pragma region Windows Form Designer generated code
@@ -94,10 +101,14 @@ namespace ImageMorphing {
       this->files_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
       this->open_source_image_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
       this->open_destination_image_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
+      this->start_button_ = (gcnew System::Windows::Forms::Button());
+      this->morphing_steps_numeric_up_down_ = (gcnew System::Windows::Forms::NumericUpDown());
+      this->clear_features_button_ = (gcnew System::Windows::Forms::Button());
       this->picture_box_panel_->SuspendLayout();
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->destination_picture_box_))->BeginInit();
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->source_picture_box_))->BeginInit();
       this->files_menu_strip_->SuspendLayout();
+      (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->morphing_steps_numeric_up_down_))->BeginInit();
       this->SuspendLayout();
       // 
       // picture_box_panel_
@@ -164,11 +175,46 @@ namespace ImageMorphing {
       this->open_destination_image_tool_strip_menu_item_->Size = System::Drawing::Size(201, 22);
       this->open_destination_image_tool_strip_menu_item_->Text = L"Open destination image";
       // 
+      // start_button_
+      // 
+      this->start_button_->Enabled = false;
+      this->start_button_->Location = System::Drawing::Point(13, 28);
+      this->start_button_->Name = L"start_button_";
+      this->start_button_->Size = System::Drawing::Size(75, 23);
+      this->start_button_->TabIndex = 2;
+      this->start_button_->Text = L"Start";
+      this->start_button_->UseVisualStyleBackColor = true;
+      // 
+      // morphing_steps_numeric_up_down_
+      // 
+      this->morphing_steps_numeric_up_down_->Location = System::Drawing::Point(95, 30);
+      this->morphing_steps_numeric_up_down_->Minimum = System::Decimal(gcnew cli::array< System::Int32 >(4) {
+        2, 0, 0, 0
+      });
+      this->morphing_steps_numeric_up_down_->Name = L"morphing_steps_numeric_up_down_";
+      this->morphing_steps_numeric_up_down_->Size = System::Drawing::Size(120, 20);
+      this->morphing_steps_numeric_up_down_->TabIndex = 3;
+      this->morphing_steps_numeric_up_down_->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) {
+        10, 0, 0, 0
+      });
+      // 
+      // clear_features_button_
+      // 
+      this->clear_features_button_->Location = System::Drawing::Point(221, 27);
+      this->clear_features_button_->Name = L"clear_features_button_";
+      this->clear_features_button_->Size = System::Drawing::Size(89, 23);
+      this->clear_features_button_->TabIndex = 4;
+      this->clear_features_button_->Text = L"Clear features";
+      this->clear_features_button_->UseVisualStyleBackColor = true;
+      // 
       // ApplicationForm
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
       this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
       this->ClientSize = System::Drawing::Size(1271, 570);
+      this->Controls->Add(this->clear_features_button_);
+      this->Controls->Add(this->morphing_steps_numeric_up_down_);
+      this->Controls->Add(this->start_button_);
       this->Controls->Add(this->picture_box_panel_);
       this->Controls->Add(this->files_menu_strip_);
       this->MainMenuStrip = this->files_menu_strip_;
@@ -180,6 +226,7 @@ namespace ImageMorphing {
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->source_picture_box_))->EndInit();
       this->files_menu_strip_->ResumeLayout(false);
       this->files_menu_strip_->PerformLayout();
+      (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->morphing_steps_numeric_up_down_))->EndInit();
       this->ResumeLayout(false);
       this->PerformLayout();
 
