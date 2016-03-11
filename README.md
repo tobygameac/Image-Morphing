@@ -1,4 +1,4 @@
-Content-Aware Retargeting
+Image-Morphing 
 ====================
 
 Implementation of the following paper :  

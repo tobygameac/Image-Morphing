@@ -55,6 +55,15 @@ namespace ImageMorphing {
         AdjustImagesSize();
       }
     } else if (sender == start_button_) {
+
+      for (size_t i = source_feature_lines.size(); i < destination_feature_lines.size(); ++i) {
+        source_feature_lines.push_back(destination_feature_lines[i]);
+      }
+
+      for (size_t i = destination_feature_lines.size(); i < source_feature_lines.size(); ++i) {
+        destination_feature_lines.push_back(source_feature_lines[i]);
+      }
+
       for (double t = 0; t <= 1; t += (1.0 / System::Decimal::ToDouble(morphing_steps_numeric_up_down_->Value))) {
         Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
       }
@@ -72,12 +81,12 @@ namespace ImageMorphing {
   void ApplicationForm::OnMouseMove(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e) {
     if (sender == source_picture_box_) {
       if (is_drawing_source_features) {
-        last_source_feature_line.second = cv::Point(e->X, e->Y);
+        last_source_feature_line.second = cv::Point2d(e->X, e->Y);
         PaintPictureBoxWithFeatures();
       }
     } else if (sender == destination_picture_box_) {
       if (is_drawing_destination_features) {
-        last_destination_feature_line.second = cv::Point(e->X, e->Y);
+        last_destination_feature_line.second = cv::Point2d(e->X, e->Y);
         PaintPictureBoxWithFeatures();
       }
     }
@@ -88,20 +97,20 @@ namespace ImageMorphing {
       // New features
       if (sender == source_picture_box_) {
         if (is_drawing_source_features) {
-          last_source_feature_line.second = cv::Point(e->X, e->Y);
+          last_source_feature_line.second = cv::Point2d(e->X, e->Y);
           source_feature_lines.push_back(last_source_feature_line);
           PaintPictureBoxWithFeatures();
         } else {
-          last_source_feature_line.first = cv::Point(e->X, e->Y);
+          last_source_feature_line.first = cv::Point2d(e->X, e->Y);
         }
         is_drawing_source_features = !is_drawing_source_features;
       } else if (sender == destination_picture_box_) {
         if (is_drawing_destination_features) {
-          last_destination_feature_line.second = cv::Point(e->X, e->Y);
+          last_destination_feature_line.second = cv::Point2d(e->X, e->Y);
           destination_feature_lines.push_back(last_destination_feature_line);
           PaintPictureBoxWithFeatures();
         } else {
-          last_destination_feature_line.first = cv::Point(e->X, e->Y);
+          last_destination_feature_line.first = cv::Point2d(e->X, e->Y);
         }
         is_drawing_destination_features = !is_drawing_destination_features;
       }

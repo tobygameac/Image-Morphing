@@ -20,11 +20,11 @@ namespace ImageMorphing {
   cv::Mat source_features_image;
   cv::Mat destination_features_image;
 
-  std::vector<std::pair<cv::Point2f, cv::Point2f> > source_feature_lines;
-  std::vector<std::pair<cv::Point2f, cv::Point2f> > destination_feature_lines;
+  std::vector<std::pair<cv::Point2d, cv::Point2d> > source_feature_lines;
+  std::vector<std::pair<cv::Point2d, cv::Point2d> > destination_feature_lines;
 
-  std::pair<cv::Point2f, cv::Point2f> last_source_feature_line;
-  std::pair<cv::Point2f, cv::Point2f> last_destination_feature_line;
+  std::pair<cv::Point2d, cv::Point2d> last_source_feature_line;
+  std::pair<cv::Point2d, cv::Point2d> last_destination_feature_line;
 
   std::vector<cv::Vec3b> feature_colors;
 
