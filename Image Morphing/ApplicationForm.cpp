@@ -70,11 +70,29 @@ namespace ImageMorphing {
 
       result_video_writer.open("result.avi", 0, 30, resized_source_image.size());
 
-      for (double t = 0; t <= 1; t += (1.0 / System::Decimal::ToDouble(morphing_steps_numeric_up_down_->Value))) {
-        cv::Mat result_at_t = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
 
-        result_video_writer.write(result_at_t);
+      size_t frame_count = System::Decimal::ToInt32(morphing_steps_numeric_up_down_->Value);
+
+      double t_gap = 1.0 / (double)frame_count;
+
+      std::vector<cv::Mat> result_at_t(frame_count + 1);
+
+#pragma omp parallel for
+      for (int i = 0; i < result_at_t.size(); ++i) {
+        double t = t_gap * i;
+        result_at_t[i] = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0).clone();
+        std::cout << "Done : " << t << "\n";
       }
+
+      for (const auto &frame : result_at_t) {
+        result_video_writer.write(frame);
+      }
+
+      //for (double t = 0; t <= 1; t += t_gap) {
+      //  cv::Mat result_at_t = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
+
+      //  result_video_writer.write(result_at_t);
+      //}
 
       std::cout << "Done.\n";
 

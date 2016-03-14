@@ -9,6 +9,7 @@
 #include <opencv\cv.hpp>
 
 #include "morphing.h"
+#include "omp.h"
 
 #include <msclr\marshal_cppstd.h>
 #using <mscorlib.dll>

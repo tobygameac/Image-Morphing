@@ -7,6 +7,8 @@
 
 #include <opencv\cv.hpp>
 
+#include "omp.h"
+
 namespace ImageMorphing {
 
   inline double SqrLineLength(const std::pair<cv::Point2d, cv::Point2d> &line) {
@@ -82,15 +84,15 @@ namespace ImageMorphing {
         double weight_sum = 0;
 
         for (size_t i = 0; i < destination_feature_lines.size(); ++i) {
-          cv::Point2d px = (cv::Point2d(c, r) - destination_feature_lines[i].first);
-          cv::Point2d pq = destination_feature_lines[i].second - destination_feature_lines[i].first;
+          cv::Point2d p_x = (cv::Point2d(c, r) - destination_feature_lines[i].first);
+          cv::Point2d p_q = destination_feature_lines[i].second - destination_feature_lines[i].first;
 
-          double u = px.ddot(pq) / SqrLineLength(destination_feature_lines[i]);
-          double v = px.ddot(Perpendicular(pq)) / LineLength(destination_feature_lines[i]);
+          double u = p_x.ddot(p_q) / SqrLineLength(destination_feature_lines[i]);
+          double v = p_x.ddot(Perpendicular(p_q)) / LineLength(destination_feature_lines[i]);
 
-          cv::Point2d pq_prime = source_feature_lines[i].second - source_feature_lines[i].first;
+          cv::Point2d p_q_prime = source_feature_lines[i].second - source_feature_lines[i].first;
 
-          cv::Point2d warpped_position = source_feature_lines[i].first + u * pq_prime + v * Perpendicular(pq_prime) / LineLength(source_feature_lines[i]);
+          cv::Point2d warpped_position = source_feature_lines[i].first + u * p_q_prime + v * Perpendicular(p_q_prime) / LineLength(source_feature_lines[i]);
 
           double distance_with_line = std::abs(v);
 
