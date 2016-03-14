@@ -48,21 +48,22 @@ namespace ImageMorphing {
   }
 
   inline std::pair<cv::Point2d, cv::Point2d> LineInterpolation(
-    const std::pair<cv::Point2d, cv::Point2d> &l1, const std::pair<cv::Point2d, cv::Point2d> &l2, 
+    const std::pair<cv::Point2d, cv::Point2d> &l1, const std::pair<cv::Point2d, cv::Point2d> &l2,
     double t) {
     //std::pair<cv::Point2d, cv::Point2d> result_line(l1.first * (1 - t) + l2.first * t, l1.second * (1 - t) + l2.second * t);
+    //return result_line;
 
     double new_line_length = LineLength(l1) * (1 - t) + LineLength(l2) * t;
     cv::Point2d new_line_midpoint = LineMidpoint(l1) * (1 - t) + LineMidpoint(l2) * t;
     double new_line_orientation = LineOrientation(l1) * (1 - t) + LineOrientation(l2) * t;
 
-    cv::Point2d new_line_offset = new_line_length * 0.5 * cv::Point2d(std::cos(new_line_orientation), std::sin(new_line_orientation));
+    cv::Point2d new_line_direction = new_line_length * 0.5 * cv::Point2d(std::cos(new_line_orientation), std::sin(new_line_orientation));
 
-    std::pair<cv::Point2d, cv::Point2d> result_line(new_line_midpoint - new_line_offset, new_line_midpoint + new_line_offset);
+    std::pair<cv::Point2d, cv::Point2d> result_line(new_line_midpoint - new_line_direction, new_line_midpoint + new_line_direction);
 
     return result_line;
   }
-  
+
   cv::Mat ImageWarping(const cv::Mat &source_image,
     const std::vector<std::pair<cv::Point2d, cv::Point2d> > &source_feature_lines,
     const std::vector<std::pair<cv::Point2d, cv::Point2d> > &destination_feature_lines,
@@ -70,7 +71,9 @@ namespace ImageMorphing {
 
     cv::Mat warpped_image = source_image.clone();
 
+#pragma omp parallel for
     for (int r = 0; r < warpped_image.rows; ++r) {
+#pragma omp parallel for
       for (int c = 0; c < warpped_image.cols; ++c) {
 
         cv::Vec3d total_warpped_color(0, 0, 0);
@@ -103,9 +106,15 @@ namespace ImageMorphing {
           weight_sum += lines_weight[i];
 
           cv::Vec3d warpped_color(0, 0, 0);
-          if (warpped_position.x >= 0 && warpped_position.x < warpped_image.cols && warpped_position.y >= 0 && warpped_position.y < warpped_image.rows) {
-            warpped_color = BilinearInterpolationPixelValue(source_image, warpped_position);
-          }
+
+          warpped_position.x = std::max(0.0, warpped_position.x);
+          warpped_position.x = std::min(source_image.cols - 1.0, warpped_position.x);
+
+          warpped_position.y = std::max(0.0, warpped_position.y);
+          warpped_position.y = std::min(source_image.rows - 1.0, warpped_position.y);
+
+          warpped_color = BilinearInterpolationPixelValue(source_image, warpped_position);
+
           total_warpped_color += warpped_color * lines_weight[i];
         }
 
@@ -149,13 +158,13 @@ namespace ImageMorphing {
 
     cv::Mat result_image(source_image.size(), source_image.type());
 
+#pragma omp parallel for
     for (int r = 0; r < result_image.rows; ++r) {
+#pragma omp parallel for
       for (int c = 0; c < result_image.cols; ++c) {
         result_image.at<cv::Vec3b>(r, c) = (cv::Vec3d)warpped_source_image.at<cv::Vec3b>(r, c) * (1 - t) + (cv::Vec3d)warpped_destination_image.at<cv::Vec3b>(r, c) * (t);
       }
     }
-
-    cv::imwrite(std::to_string(t) + "result.jpg", result_image);
 
     return result_image;
   }

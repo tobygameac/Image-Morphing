@@ -3,6 +3,9 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <iostream>
+#include <fstream>
+
 #include <opencv\cv.hpp>
 
 #include "morphing.h"
@@ -63,6 +66,10 @@ namespace ImageMorphing {
     void PaintPictureBoxWithFeatures();
 
     System::Drawing::Bitmap ^CVMatToBitmap(const cv::Mat &mat);
+    
+    void LoadFeatures();
+
+    void SaveFeatures();
 
     void Test();
 
@@ -86,6 +93,8 @@ namespace ImageMorphing {
     System::Windows::Forms::Button ^start_button_;
     System::Windows::Forms::NumericUpDown ^morphing_steps_numeric_up_down_;
     System::Windows::Forms::Button ^clear_features_button_;
+    System::Windows::Forms::Button ^load_features_button_;
+    System::Windows::Forms::Button ^save_features_button_;
     System::Windows::Forms::ToolStripMenuItem ^open_destination_image_tool_strip_menu_item_;
 
 #pragma region Windows Form Designer generated code
@@ -104,6 +113,8 @@ namespace ImageMorphing {
       this->start_button_ = (gcnew System::Windows::Forms::Button());
       this->morphing_steps_numeric_up_down_ = (gcnew System::Windows::Forms::NumericUpDown());
       this->clear_features_button_ = (gcnew System::Windows::Forms::Button());
+      this->load_features_button_ = (gcnew System::Windows::Forms::Button());
+      this->save_features_button_ = (gcnew System::Windows::Forms::Button());
       this->picture_box_panel_->SuspendLayout();
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->destination_picture_box_))->BeginInit();
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->source_picture_box_))->BeginInit();
@@ -207,11 +218,31 @@ namespace ImageMorphing {
       this->clear_features_button_->Text = L"Clear features";
       this->clear_features_button_->UseVisualStyleBackColor = true;
       // 
+      // load_features_button_
+      // 
+      this->load_features_button_->Location = System::Drawing::Point(316, 27);
+      this->load_features_button_->Name = L"load_features_button_";
+      this->load_features_button_->Size = System::Drawing::Size(89, 23);
+      this->load_features_button_->TabIndex = 5;
+      this->load_features_button_->Text = L"Load features";
+      this->load_features_button_->UseVisualStyleBackColor = true;
+      // 
+      // save_features_button_
+      // 
+      this->save_features_button_->Location = System::Drawing::Point(411, 28);
+      this->save_features_button_->Name = L"save_features_button_";
+      this->save_features_button_->Size = System::Drawing::Size(89, 23);
+      this->save_features_button_->TabIndex = 6;
+      this->save_features_button_->Text = L"Save features";
+      this->save_features_button_->UseVisualStyleBackColor = true;
+      // 
       // ApplicationForm
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
       this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
       this->ClientSize = System::Drawing::Size(1271, 570);
+      this->Controls->Add(this->save_features_button_);
+      this->Controls->Add(this->load_features_button_);
       this->Controls->Add(this->clear_features_button_);
       this->Controls->Add(this->morphing_steps_numeric_up_down_);
       this->Controls->Add(this->start_button_);

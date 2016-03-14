@@ -19,6 +19,8 @@ namespace ImageMorphing {
 
     start_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
     clear_features_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+    load_features_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+    save_features_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
 
     source_picture_box_->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
     destination_picture_box_->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
@@ -64,9 +66,18 @@ namespace ImageMorphing {
         destination_feature_lines.push_back(source_feature_lines[i]);
       }
 
+      cv::VideoWriter result_video_writer;
+
+      result_video_writer.open("result.avi", 0, 30, resized_source_image.size());
+
       for (double t = 0; t <= 1; t += (1.0 / System::Decimal::ToDouble(morphing_steps_numeric_up_down_->Value))) {
-        Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
+        cv::Mat result_at_t = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
+
+        result_video_writer.write(result_at_t);
       }
+
+      std::cout << "Done.\n";
+
     } else if (sender == clear_features_button_) {
       source_feature_lines.clear();
       destination_feature_lines.clear();
@@ -75,6 +86,10 @@ namespace ImageMorphing {
       is_drawing_destination_features = false;
 
       PaintPictureBoxWithFeatures();
+    } else if (sender == load_features_button_) {
+      LoadFeatures();
+    } else if (sender == save_features_button_) {
+      SaveFeatures();
     }
   }
 
@@ -183,7 +198,7 @@ namespace ImageMorphing {
 
   System::Drawing::Bitmap ^ApplicationForm::CVMatToBitmap(const cv::Mat &mat) {
     //return gcnew System::Drawing::Bitmap(mat.cols, mat.rows, mat.step, System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr)mat.bitmap_data);
-    
+
     if (mat.type() != CV_8UC3) {
       throw gcnew NotSupportedException("Only images of type CV_8UC3 are supported for conversion to Bitmap");
     }
@@ -208,9 +223,45 @@ namespace ImageMorphing {
     return bitmap;
   }
 
+  void ApplicationForm::LoadFeatures() {
+    source_feature_lines.clear();
+    destination_feature_lines.clear();
+
+    std::ifstream features_input_stream("features.txt");
+
+    bool is_source_feature = true;
+
+    std::pair<cv::Point2d, cv::Point2d> feature_line;
+
+    while (features_input_stream >> feature_line.first.x >> feature_line.first.y >> feature_line.second.x >> feature_line.second.y) {
+      if (feature_line.first.x < 0) {
+        is_source_feature = false;
+        continue;
+      }
+      (is_source_feature ? source_feature_lines : destination_feature_lines).push_back(feature_line);
+    }
+
+    PaintPictureBoxWithFeatures();
+  }
+
+  void ApplicationForm::SaveFeatures() {
+    std::ofstream features_output_stream("features.txt");
+
+    for (const auto &feature : source_feature_lines) {
+      features_output_stream << feature.first.x << " " << feature.first.y << " " << feature.second.x << " " << feature.second.y << "\n";
+    }
+
+    features_output_stream << "-1 -1 -1 -1\n";
+
+    for (const auto &feature : destination_feature_lines) {
+      features_output_stream << feature.first.x << " " << feature.first.y << " " << feature.second.x << " " << feature.second.y << "\n";
+    }
+  }
+
   void ApplicationForm::Test() {
-    original_source_image = cv::imread("..//data//woman.jpg");
-    original_destination_image = cv::imread("..//data//tiger.jpg");
+    original_source_image = cv::imread("..//data//image038.jpg");
+    original_destination_image = cv::imread("..//data//image036.jpg");
     AdjustImagesSize();
+    LoadFeatures();
   }
 }
