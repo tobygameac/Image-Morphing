@@ -15,20 +15,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationForm.h">
+    <ClInclude Include="morphing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="morphing.h">
+    <ClInclude Include="application_form.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationForm.cpp">
+    <ClCompile Include="application_form.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="ApplicationForm.resx">
+    <EmbeddedResource Include="application_form.resx">
       <Filter>Resource Files</Filter>
     </EmbeddedResource>
   </ItemGroup>

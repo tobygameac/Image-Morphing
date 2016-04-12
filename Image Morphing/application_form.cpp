@@ -16,7 +16,7 @@ namespace ImageMorphing {
 
     picture_boxes = gcnew System::Collections::Generic::List<System::Windows::Forms::PictureBox ^>();
 
-    add_image_tool_strip_menu_item_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
+    add_images_tool_strip_menu_item_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
 
     start_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
     clear_features_button_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
@@ -35,44 +35,45 @@ namespace ImageMorphing {
   }
 
   void ApplicationForm::OnButtonsClick(System::Object ^sender, System::EventArgs ^e) {
-    if (sender == add_image_tool_strip_menu_item_) {
-      OpenFileDialog ^open_image_file_dialog = gcnew OpenFileDialog();
-      open_image_file_dialog->Filter = "Image files | *.*";
-      open_image_file_dialog->Title = "Open an image file.";
+    if (sender == add_images_tool_strip_menu_item_) {
+      OpenFileDialog ^open_images_file_dialog = gcnew OpenFileDialog();
+      open_images_file_dialog->Multiselect = true;
+      open_images_file_dialog->Filter = "Image files | *.*";
+      open_images_file_dialog->Title = "Open an image file.";
 
-      if (open_image_file_dialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-        System::Windows::Forms::PictureBox ^new_picture_box = gcnew System::Windows::Forms::PictureBox();
+      if (open_images_file_dialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 
-        new_picture_box->Location = System::Drawing::Point(200, 4);
-        new_picture_box->Size = System::Drawing::Size(100, 50);
-        new_picture_box->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
-        new_picture_box->TabStop = false;
+        for each (System::String ^raw_file_path in open_images_file_dialog->FileNames) {
 
-        new_picture_box->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
-        new_picture_box->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
+          System::Windows::Forms::PictureBox ^new_picture_box = gcnew System::Windows::Forms::PictureBox();
 
-        this->picture_box_panel_->Controls->Add(new_picture_box);
+          new_picture_box->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
+          new_picture_box->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
+          new_picture_box->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
 
-        picture_boxes->Add(new_picture_box);
+          this->picture_box_panel_->Controls->Add(new_picture_box);
 
-        source_images.resize(picture_boxes->Count);
-        resized_images.resize(picture_boxes->Count);
-        images_with_feature_lines.resize(picture_boxes->Count);
-        feature_lines_of_images.resize(picture_boxes->Count);
-        last_feature_line_of_images.resize(picture_boxes->Count);
-        is_drawing_feature_of_images.resize(picture_boxes->Count);
+          picture_boxes->Add(new_picture_box);
 
-        Bitmap ^source_bitmap = gcnew Bitmap(open_image_file_dialog->FileName);
-        new_picture_box->Image = source_bitmap;
+          source_images.resize(picture_boxes->Count);
+          resized_images.resize(picture_boxes->Count);
+          images_with_feature_lines.resize(picture_boxes->Count);
+          feature_lines_of_images.resize(picture_boxes->Count);
+          last_feature_line_of_images.resize(picture_boxes->Count);
+          is_drawing_feature_of_images.resize(picture_boxes->Count);
 
-        std::string raw_file_path = msclr::interop::marshal_as<std::string>(open_image_file_dialog->FileName);
-        source_images[source_images.size() - 1] = cv::imread(raw_file_path);
+          Bitmap ^source_bitmap = gcnew Bitmap(raw_file_path);
+          new_picture_box->Image = source_bitmap;
 
-        if (picture_boxes->Count >= 2) {
-          start_button_->Enabled = true;
+          std::string file_path = msclr::interop::marshal_as<std::string>(raw_file_path);
+          source_images[source_images.size() - 1] = cv::imread(file_path);
+
+          if (picture_boxes->Count >= 2) {
+            start_button_->Enabled = true;
+          }
+
+          AdjustImagesSize();
         }
-
-        AdjustImagesSize();
       }
     } else if (sender == start_button_) {
 
@@ -103,22 +104,25 @@ namespace ImageMorphing {
 
         const double FPS = 30;
 
+        const size_t FRAME_COUNT = System::Decimal::ToInt32(morphing_steps_numeric_up_down_->Value);
+
+        const size_t INTERPOLATION_FRAME_COUNT = 5;
+        const double INTERPOLATION_GAP = 1.0 / (double)INTERPOLATION_FRAME_COUNT;
+
+        std::vector<cv::Mat> result_at_t(FRAME_COUNT + 1);
+
         cv::VideoWriter result_video_writer;
 
         result_video_writer.open(raw_file_path, 0, FPS, resized_images[0].size());
 
         for (size_t image_index = 1; image_index < source_images.size(); ++image_index) {
-          size_t frame_count = System::Decimal::ToInt32(morphing_steps_numeric_up_down_->Value);
 
-          double t_gap = 1.0 / (double)frame_count;
-
-          std::vector<cv::Mat> result_at_t(frame_count + 1);
+          double t_gap = 1.0 / (double)FRAME_COUNT;
 
 #pragma omp parallel for
           for (int i = 0; i < result_at_t.size(); ++i) {
             double t = t_gap * i;
-            result_at_t[i] = Morphing(resized_images[image_index - 1], resized_images[image_index],
-              t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
+            result_at_t[i] = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
 
             std::cout << "Done : " << image_index << " - " << t << "\n";
           }
@@ -126,6 +130,20 @@ namespace ImageMorphing {
           for (const cv::Mat &frame : result_at_t) {
             result_video_writer.write(frame);
           }
+
+          //for (size_t i = 0; i < result_at_t.size(); ++i) {
+          //  if (!i) {
+          //    if (image_index == 1) {
+          //      result_video_writer.write(result_at_t[i]);
+          //    }
+          //  } else {
+          //    for (double delta_t = INTERPOLATION_GAP; delta_t <= 1; delta_t += INTERPOLATION_GAP) {
+          //      cv::Mat interpolated_image;
+          //      cv::addWeighted(result_at_t[i - 1], (1 - delta_t), result_at_t[i], delta_t, 0.0, interpolated_image);
+          //      result_video_writer.write(interpolated_image);
+          //    }
+          //  }
+          //}
         }
 
         //for (double t = 0; t <= 1; t += t_gap) {
@@ -216,9 +234,7 @@ namespace ImageMorphing {
       return;
     }
 
-    start_button_->Enabled = true;
-
-    cv::Size &min_size = source_images[0].size();
+    cv::Size min_size = source_images[0].size();
 
     for (const cv::Mat &image : source_images) {
       min_size.width = std::min(min_size.width, image.size().width);
@@ -327,6 +343,11 @@ namespace ImageMorphing {
         ++target_index;
         continue;
       }
+
+      if (target_index >= feature_lines_of_images.size()) {
+        break;
+      }
+
       feature_lines_of_images[target_index].push_back(feature_line);
     }
 

@@ -29,7 +29,7 @@ namespace ImageMorphing {
 
   std::vector<size_t> is_drawing_feature_of_images;
 
-  const size_t FEATURE_LINE_THICKNESS = 3;
+  const size_t FEATURE_LINE_THICKNESS = 2;
   const size_t PICTURE_BOX_LOCATION_GAP = 50;
 
   using namespace System;
@@ -85,14 +85,13 @@ namespace ImageMorphing {
 
     System::Windows::Forms::MenuStrip ^files_menu_strip_;
     System::Windows::Forms::ToolStripMenuItem ^files_tool_strip_menu_item_;
-    System::Windows::Forms::ToolStripMenuItem^  add_image_tool_strip_menu_item_;
+    System::Windows::Forms::ToolStripMenuItem ^add_images_tool_strip_menu_item_;
 
     System::Windows::Forms::Button ^start_button_;
     System::Windows::Forms::NumericUpDown ^morphing_steps_numeric_up_down_;
     System::Windows::Forms::Button ^clear_features_button_;
     System::Windows::Forms::Button ^load_features_button_;
     System::Windows::Forms::Button ^save_features_button_;
-
 
 #pragma region Windows Form Designer generated code
     /// <summary>
@@ -103,7 +102,7 @@ namespace ImageMorphing {
       this->picture_box_panel_ = (gcnew System::Windows::Forms::Panel());
       this->files_menu_strip_ = (gcnew System::Windows::Forms::MenuStrip());
       this->files_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
-      this->add_image_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
+      this->add_images_tool_strip_menu_item_ = (gcnew System::Windows::Forms::ToolStripMenuItem());
       this->start_button_ = (gcnew System::Windows::Forms::Button());
       this->morphing_steps_numeric_up_down_ = (gcnew System::Windows::Forms::NumericUpDown());
       this->clear_features_button_ = (gcnew System::Windows::Forms::Button());
@@ -138,17 +137,17 @@ namespace ImageMorphing {
       // files_tool_strip_menu_item_
       // 
       this->files_tool_strip_menu_item_->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(1) {
-        this->add_image_tool_strip_menu_item_
+        this->add_images_tool_strip_menu_item_
       });
       this->files_tool_strip_menu_item_->Name = L"files_tool_strip_menu_item_";
       this->files_tool_strip_menu_item_->Size = System::Drawing::Size(42, 20);
       this->files_tool_strip_menu_item_->Text = L"Files";
       // 
-      // add_image_tool_strip_menu_item_
+      // add_images_tool_strip_menu_item_
       // 
-      this->add_image_tool_strip_menu_item_->Name = L"add_image_tool_strip_menu_item_";
-      this->add_image_tool_strip_menu_item_->Size = System::Drawing::Size(152, 22);
-      this->add_image_tool_strip_menu_item_->Text = L"Add image";
+      this->add_images_tool_strip_menu_item_->Name = L"add_images_tool_strip_menu_item_";
+      this->add_images_tool_strip_menu_item_->Size = System::Drawing::Size(152, 22);
+      this->add_images_tool_strip_menu_item_->Text = L"Add images";
       // 
       // start_button_
       // 

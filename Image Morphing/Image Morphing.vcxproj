@@ -142,17 +142,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationForm.cpp" />
+    <ClCompile Include="application_form.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationForm.h">
+    <ClInclude Include="application_form.h">
       <FileType>CppForm</FileType>
     </ClInclude>
     <ClInclude Include="morphing.h" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="ApplicationForm.resx">
-      <DependentUpon>ApplicationForm.h</DependentUpon>
+    <EmbeddedResource Include="application_form.resx">
+      <DependentUpon>application_form.h</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
