@@ -120,7 +120,7 @@ namespace ImageMorphing {
           double t_gap = 1.0 / (double)FRAME_COUNT;
 
 #pragma omp parallel for
-          for (int i = 0; i < result_at_t.size(); ++i) {
+          for (int i = !(image_index == 1); i < result_at_t.size(); ++i) {
             double t = t_gap * i;
             result_at_t[i] = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
 
@@ -283,14 +283,14 @@ namespace ImageMorphing {
 
     for (size_t i = 0; i < images_with_feature_lines.size(); ++i) {
       if (is_drawing_feature_of_images[i]) {
-        cv::line(images_with_feature_lines[i], last_feature_line_of_images[i].first, last_feature_line_of_images[i].second, feature_colors[feature_lines_of_images[i].size()], FEATURE_LINE_THICKNESS);
+        cv::arrowedLine(images_with_feature_lines[i], last_feature_line_of_images[i].first, last_feature_line_of_images[i].second, feature_colors[feature_lines_of_images[i].size()], FEATURE_LINE_THICKNESS);
       }
     }
 
     for (size_t i = 0; i < images_with_feature_lines.size(); ++i) {
       for (size_t j = 0; j < feature_lines_of_images[i].size(); ++j) {
         const auto &feature_line = feature_lines_of_images[i][j];
-        cv::line(images_with_feature_lines[i], feature_line.first, feature_line.second, feature_colors[j], FEATURE_LINE_THICKNESS);
+        cv::arrowedLine(images_with_feature_lines[i], feature_line.first, feature_line.second, feature_colors[j], FEATURE_LINE_THICKNESS);
       }
       picture_boxes[i]->Image = CVMatToBitmap(images_with_feature_lines[i]);
     }
@@ -357,8 +357,8 @@ namespace ImageMorphing {
   void ApplicationForm::SaveFeatures(const std::string &file_path) {
     std::ofstream features_output_stream(file_path);
 
-    for (auto feature_lines : feature_lines_of_images) {
-      for (auto feature_line : feature_lines) {
+    for (const auto &feature_lines : feature_lines_of_images) {
+      for (const auto &feature_line : feature_lines) {
         features_output_stream << feature_line.first.x << " " << feature_line.first.y << " " << feature_line.second.x << " " << feature_line.second.y << "\n";
       }
       features_output_stream << "-1 -1 -1 -1\n";

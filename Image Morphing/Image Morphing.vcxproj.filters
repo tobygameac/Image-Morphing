@@ -21,6 +21,9 @@
     <ClInclude Include="application_form.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="warping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application_form.cpp">

@@ -541,16 +541,6 @@ Stream::Stream(const Ptr<Impl>& impl)
 }
 
 //===================================================================================
-// Event
-//===================================================================================
-
-inline
-Event::Event(const Ptr<Impl>& impl)
-    : impl_(impl)
-{
-}
-
-//===================================================================================
 // Initialization & Info
 //===================================================================================
 
@@ -588,7 +578,7 @@ int DeviceInfo::deviceID() const
 inline
 size_t DeviceInfo::freeMemory() const
 {
-    size_t _totalMemory = 0, _freeMemory = 0;
+    size_t _totalMemory, _freeMemory;
     queryMemory(_totalMemory, _freeMemory);
     return _freeMemory;
 }
@@ -596,7 +586,7 @@ size_t DeviceInfo::freeMemory() const
 inline
 size_t DeviceInfo::totalMemory() const
 {
-    size_t _totalMemory = 0, _freeMemory = 0;
+    size_t _totalMemory, _freeMemory;
     queryMemory(_totalMemory, _freeMemory);
     return _totalMemory;
 }

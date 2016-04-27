@@ -107,7 +107,7 @@ objects from still images or video. See <http://en.wikipedia.org/wiki/Inpainting
    -   An example using the inpainting technique can be found at
         opencv_source_code/samples/cpp/inpaint.cpp
     -   (Python) An example using the inpainting technique can be found at
-        opencv_source_code/samples/python/inpaint.py
+        opencv_source_code/samples/python2/inpaint.py
  */
 CV_EXPORTS_W void inpaint( InputArray src, InputArray inpaintMask,
         OutputArray dst, double inpaintRadius, int flags );
@@ -180,7 +180,7 @@ denoising time. Recommended value 21 pixels
 removes noise but also removes image details, smaller h value preserves details but also preserves
 some noise
 @param hColor The same as h but for color components. For most images value equals 10
-will be enough to remove colored noise and do not distort colors
+will be enought to remove colored noise and do not distort colors
 
 The function converts image to CIELAB colorspace and then separately denoise L and AB components
 with given h parameters using fastNlMeansDenoising function.

@@ -261,7 +261,7 @@ public:
 
     @note
        -   (Python) A face detection example using cascade classifiers can be found at
-            opencv_source_code/samples/python/facedetect.py
+            opencv_source_code/samples/python2/facedetect.py
     */
     CV_WRAP void detectMultiScale( InputArray image,
                           CV_OUT std::vector<Rect>& objects,
@@ -345,18 +345,18 @@ public:
     CV_WRAP HOGDescriptor() : winSize(64,128), blockSize(16,16), blockStride(8,8),
         cellSize(8,8), nbins(9), derivAperture(1), winSigma(-1),
         histogramNormType(HOGDescriptor::L2Hys), L2HysThreshold(0.2), gammaCorrection(true),
-        free_coef(-1.f), nlevels(HOGDescriptor::DEFAULT_NLEVELS), signedGradient(false)
+        free_coef(-1.f), nlevels(HOGDescriptor::DEFAULT_NLEVELS)
     {}
 
     CV_WRAP HOGDescriptor(Size _winSize, Size _blockSize, Size _blockStride,
                   Size _cellSize, int _nbins, int _derivAperture=1, double _winSigma=-1,
                   int _histogramNormType=HOGDescriptor::L2Hys,
                   double _L2HysThreshold=0.2, bool _gammaCorrection=false,
-                  int _nlevels=HOGDescriptor::DEFAULT_NLEVELS, bool _signedGradient=false)
+                  int _nlevels=HOGDescriptor::DEFAULT_NLEVELS)
     : winSize(_winSize), blockSize(_blockSize), blockStride(_blockStride), cellSize(_cellSize),
     nbins(_nbins), derivAperture(_derivAperture), winSigma(_winSigma),
     histogramNormType(_histogramNormType), L2HysThreshold(_L2HysThreshold),
-    gammaCorrection(_gammaCorrection), free_coef(-1.f), nlevels(_nlevels), signedGradient(_signedGradient)
+    gammaCorrection(_gammaCorrection), free_coef(-1.f), nlevels(_nlevels)
     {}
 
     CV_WRAP HOGDescriptor(const String& filename)
@@ -432,7 +432,6 @@ public:
     UMat oclSvmDetector;
     float free_coef;
     CV_PROP int nlevels;
-    CV_PROP bool signedGradient;
 
 
     //! evaluate specified ROI and return confidence value for each location
