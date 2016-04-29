@@ -1,5 +1,7 @@
 #pragma once
 
+#include <windows.h>
+
 #include <cstdlib>
 #include <ctime>
 
@@ -7,15 +9,43 @@
 #include <fstream>
 #include <vector>
 
+#include <GL\glew.h>
+#include <omp.h>
 #include <opencv\cv.hpp>
 
 #include "morphing.h"
-#include "omp.h"
 
 #include <msclr\marshal_cppstd.h>
 #using <mscorlib.dll>
 
 namespace ImageMorphing {
+
+  static HWND hwnd;
+  static HDC hdc;
+  static HGLRC hrc;
+
+  const std::string DEFAULT_VERTEX_SHADER_FILE_PATH = "vertex_shader.glsl";
+  const std::string DEFAULT_FRAGMENT_SHADER_FILE_PATH = "fragment_shader.glsl";
+
+  const std::string SHADER_ATTRIBUTE_VERTEX_POSITION_NAME = "vertex_position";
+  const std::string SHADER_ATTRIBUTE_VERTEX_COLOR_NAME = "vertex_color";
+  const std::string SHADER_ATTRIBUTE_VERTEX_UV_NAME = "vertex_uv";
+
+  const std::string SHADER_UNIFORM_MODELVIEW_MATRIX_NAME = "modelview_matrix";
+  const std::string SHADER_UNIFORM_VIEW_MATRIX_NAME = "view_matrix";
+  const std::string SHADER_UNIFORM_PROJECTION_MATRIX_NAME = "projection_matrix";
+  const std::string SHADER_UNIFORM_TEXTURE_NAME = "texture";
+  const std::string SHADER_UNIFORM_TEXTURE_FLAG_NAME = "texture_flag";
+
+  GLint shader_program_id;
+  GLint shader_attribute_vertex_position_id;
+  GLint shader_attribute_vertex_color_id;
+  GLint shader_attribute_vertex_uv_id;
+  GLint shader_uniform_modelview_matrix_id;
+  GLint shader_uniform_view_matrix_id;
+  GLint shader_uniform_projection_matrix_id;
+  GLint shader_uniform_texture_id;
+  GLint shader_uniform_texture_flag_id;
 
   std::vector<cv::Mat> source_images;
   std::vector<cv::Mat> resized_images;
@@ -31,6 +61,11 @@ namespace ImageMorphing {
 
   const size_t FEATURE_LINE_THICKNESS = 2;
   const size_t PICTURE_BOX_LOCATION_GAP = 50;
+
+  using namespace System::Runtime::InteropServices;
+
+  [DllImport("opengl32.dll")]
+  extern HDC wglSwapBuffers(HDC hdc);
 
   using namespace System;
   using namespace System::ComponentModel;
@@ -50,6 +85,10 @@ namespace ImageMorphing {
 
   private:
 
+    static bool ParseFileIntoString(const std::string &file_path, std::string &file_string);
+
+    void InitializeOpenGL();
+
     System::Collections::Generic::List<System::Windows::Forms::PictureBox ^> ^picture_boxes;
 
     void OnButtonsClick(System::Object ^sender, System::EventArgs ^e);
@@ -57,6 +96,8 @@ namespace ImageMorphing {
     void OnMouseMove(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e);
 
     void OnMouseDown(System::Object ^sender, System::Windows::Forms::MouseEventArgs ^e);
+
+    void AddImage(System::String ^file_path);
 
     void AdjustImagesSize();
 
@@ -67,6 +108,8 @@ namespace ImageMorphing {
     void LoadFeatures(const std::string &file_path);
 
     void SaveFeatures(const std::string &file_path);
+
+    void SaveResult(const std::string &file_path);
 
     void Test();
 

@@ -14,6 +14,8 @@ namespace ImageMorphing {
   ApplicationForm::ApplicationForm() {
     InitializeComponent();
 
+    InitializeOpenGL();
+
     picture_boxes = gcnew System::Collections::Generic::List<System::Windows::Forms::PictureBox ^>();
 
     add_images_tool_strip_menu_item_->Click += gcnew System::EventHandler(this, &ImageMorphing::ApplicationForm::OnButtonsClick);
@@ -25,13 +27,155 @@ namespace ImageMorphing {
 
     srand(time(0));
 
-    //Test();
+    Test();
   }
 
   ApplicationForm::~ApplicationForm() {
     if (components) {
       delete components;
     }
+  }
+
+  bool ApplicationForm::ParseFileIntoString(const std::string &file_path, std::string &file_string) {
+    std::ifstream file_stream(file_path);
+    if (!file_stream.is_open()) {
+      return false;
+    }
+    file_string = std::string(std::istreambuf_iterator<char>(file_stream), std::istreambuf_iterator<char>());
+    return true;
+  }
+
+  void ApplicationForm::InitializeOpenGL() {
+    // Get Handle
+    hwnd = (HWND)this->Handle.ToPointer();
+    hdc = GetDC(hwnd);
+    wglSwapBuffers(hdc);
+
+    // Set pixel format
+    PIXELFORMATDESCRIPTOR pfd;
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = (byte)(PFD_TYPE_RGBA);
+    pfd.cColorBits = 32;
+    pfd.cDepthBits = 32;
+    pfd.iLayerType = (byte)(PFD_MAIN_PLANE);
+
+    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
+
+    // Create OpenGL Rendering Context
+    hrc = (wglCreateContext(hdc));
+    if (!hrc) {
+      std::cerr << "wglCreateContext failed.\n";
+    }
+
+    // Assign OpenGL Rendering Context
+    if (!wglMakeCurrent(hdc, hrc)) {
+      std::cerr << "wglMakeCurrent failed.\n";
+    }
+
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+      std::cerr << "OpenGL initialize failed.\n";
+    }
+
+    if (!GLEW_VERSION_2_0) {
+      std::cerr << "Your graphic card does not support OpenGL 2.0.\n";
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    std::string vertex_shader_string;
+    std::string fragment_shader_string;
+
+    ParseFileIntoString(DEFAULT_VERTEX_SHADER_FILE_PATH, vertex_shader_string);
+    ParseFileIntoString(DEFAULT_FRAGMENT_SHADER_FILE_PATH, fragment_shader_string);
+
+    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    const GLchar *vertex_shader_pointer = (const GLchar*)vertex_shader_string.c_str();
+    glShaderSource(vertex_shader, 1, &vertex_shader_pointer, NULL);
+    glCompileShader(vertex_shader);
+
+    int shader_compile_status;
+    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &shader_compile_status);
+    if (shader_compile_status != GL_TRUE) {
+      std::cerr << "Could not compile the shader " << DEFAULT_VERTEX_SHADER_FILE_PATH << " .\n";
+    }
+
+    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    const GLchar *fragment_shader_pointer = (const GLchar*)fragment_shader_string.c_str();
+    glShaderSource(fragment_shader, 1, &fragment_shader_pointer, NULL);
+    glCompileShader(fragment_shader);
+
+    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &shader_compile_status);
+    if (shader_compile_status != GL_TRUE) {
+      std::cerr << "Could not compile the shader " << DEFAULT_FRAGMENT_SHADER_FILE_PATH << " .\n";
+    }
+
+    shader_program_id = glCreateProgram();
+    glAttachShader(shader_program_id, vertex_shader);
+    glAttachShader(shader_program_id, fragment_shader);
+    glLinkProgram(shader_program_id);
+
+    int shader_link_status;
+    glGetProgramiv(shader_program_id, GL_LINK_STATUS, &shader_link_status);
+    if (shader_link_status != GL_TRUE) {
+      std::cerr << "Could not link the shader.\n";
+    }
+
+    int shader_validate_status;
+    glValidateProgram(shader_program_id);
+    glGetProgramiv(shader_program_id, GL_VALIDATE_STATUS, &shader_validate_status);
+    if (shader_validate_status != GL_TRUE) {
+      std::cerr << "Could not validate the shader.\n";
+    }
+
+    shader_attribute_vertex_position_id = glGetAttribLocation(shader_program_id, SHADER_ATTRIBUTE_VERTEX_POSITION_NAME.c_str());
+    if (shader_attribute_vertex_position_id == -1) {
+      std::cerr << "Could not bind attribute " << SHADER_ATTRIBUTE_VERTEX_POSITION_NAME << ".\n";
+    }
+
+    shader_attribute_vertex_color_id = glGetAttribLocation(shader_program_id, SHADER_ATTRIBUTE_VERTEX_COLOR_NAME.c_str());
+    if (shader_attribute_vertex_color_id == -1) {
+      std::cerr << "Could not bind attribute " << SHADER_ATTRIBUTE_VERTEX_COLOR_NAME << ".\n";
+    }
+
+    shader_attribute_vertex_uv_id = glGetAttribLocation(shader_program_id, SHADER_ATTRIBUTE_VERTEX_UV_NAME.c_str());
+    if (shader_attribute_vertex_uv_id == -1) {
+      std::cerr << "Could not bind attribute " << SHADER_ATTRIBUTE_VERTEX_UV_NAME << ".\n";
+    }
+
+    shader_uniform_modelview_matrix_id = glGetUniformLocation(shader_program_id, SHADER_UNIFORM_MODELVIEW_MATRIX_NAME.c_str());
+    if (shader_uniform_modelview_matrix_id == -1) {
+      std::cerr << "Could not bind uniform " << SHADER_UNIFORM_MODELVIEW_MATRIX_NAME << ".\n";
+    }
+
+    shader_uniform_view_matrix_id = glGetUniformLocation(shader_program_id, SHADER_UNIFORM_VIEW_MATRIX_NAME.c_str());
+    if (shader_uniform_view_matrix_id == -1) {
+      std::cerr << "Could not bind uniform " << SHADER_UNIFORM_VIEW_MATRIX_NAME << ".\n";
+    }
+
+    shader_uniform_projection_matrix_id = glGetUniformLocation(shader_program_id, SHADER_UNIFORM_PROJECTION_MATRIX_NAME.c_str());
+    if (shader_uniform_projection_matrix_id == -1) {
+      std::cerr << "Could not bind uniform " << SHADER_UNIFORM_PROJECTION_MATRIX_NAME << ".\n";
+    }
+
+    shader_uniform_texture_id = glGetUniformLocation(shader_program_id, SHADER_UNIFORM_TEXTURE_NAME.c_str());
+    if (shader_uniform_texture_id == -1) {
+      std::cerr << "Could not bind uniform " << SHADER_UNIFORM_TEXTURE_NAME << ".\n";
+    }
+
+    shader_uniform_texture_flag_id = glGetUniformLocation(shader_program_id, SHADER_UNIFORM_TEXTURE_FLAG_NAME.c_str());
+    if (shader_uniform_texture_flag_id == -1) {
+      std::cerr << "Could not bind uniform " << SHADER_UNIFORM_TEXTURE_FLAG_NAME << ".\n";
+    }
+
+    glUseProgram(shader_program_id);
   }
 
   void ApplicationForm::OnButtonsClick(System::Object ^sender, System::EventArgs ^e) {
@@ -42,37 +186,8 @@ namespace ImageMorphing {
       open_images_file_dialog->Title = "Open an image file.";
 
       if (open_images_file_dialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-
-        for each (System::String ^raw_file_path in open_images_file_dialog->FileNames) {
-
-          System::Windows::Forms::PictureBox ^new_picture_box = gcnew System::Windows::Forms::PictureBox();
-
-          new_picture_box->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
-          new_picture_box->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
-          new_picture_box->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
-
-          this->picture_box_panel_->Controls->Add(new_picture_box);
-
-          picture_boxes->Add(new_picture_box);
-
-          source_images.resize(picture_boxes->Count);
-          resized_images.resize(picture_boxes->Count);
-          images_with_feature_lines.resize(picture_boxes->Count);
-          feature_lines_of_images.resize(picture_boxes->Count);
-          last_feature_line_of_images.resize(picture_boxes->Count);
-          is_drawing_feature_of_images.resize(picture_boxes->Count);
-
-          Bitmap ^source_bitmap = gcnew Bitmap(raw_file_path);
-          new_picture_box->Image = source_bitmap;
-
-          std::string file_path = msclr::interop::marshal_as<std::string>(raw_file_path);
-          source_images[source_images.size() - 1] = cv::imread(file_path);
-
-          if (picture_boxes->Count >= 2) {
-            start_button_->Enabled = true;
-          }
-
-          AdjustImagesSize();
+        for each (System::String ^file_path in open_images_file_dialog->FileNames) {
+          AddImage(file_path);
         }
       }
     } else if (sender == start_button_) {
@@ -86,73 +201,8 @@ namespace ImageMorphing {
       save_video_file_dialog->Title = "Save a video file.";
 
       if (save_video_file_dialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-        std::string raw_file_path = msclr::interop::marshal_as<std::string>(save_video_file_dialog->FileName);
-
-        std::vector<std::pair<cv::Point2d, cv::Point2d> > &max_amount_features_lines = feature_lines_of_images[0];
-
-        for (const auto &features_lines : feature_lines_of_images) {
-          if (features_lines.size() > max_amount_features_lines.size()) {
-            max_amount_features_lines = features_lines;
-          }
-        }
-
-        for (auto &features_lines : feature_lines_of_images) {
-          for (size_t i = features_lines.size(); i < max_amount_features_lines.size(); ++i) {
-            features_lines.push_back(max_amount_features_lines[i]);
-          }
-        }
-
-        const double FPS = 30;
-
-        const size_t FRAME_COUNT = System::Decimal::ToInt32(morphing_steps_numeric_up_down_->Value);
-
-        const size_t INTERPOLATION_FRAME_COUNT = 5;
-        const double INTERPOLATION_GAP = 1.0 / (double)INTERPOLATION_FRAME_COUNT;
-
-        std::vector<cv::Mat> result_at_t(FRAME_COUNT + 1);
-
-        cv::VideoWriter result_video_writer;
-
-        result_video_writer.open(raw_file_path, 0, FPS, resized_images[0].size());
-
-        for (size_t image_index = 1; image_index < source_images.size(); ++image_index) {
-
-          double t_gap = 1.0 / (double)FRAME_COUNT;
-
-#pragma omp parallel for
-          for (int i = !(image_index == 1); i < result_at_t.size(); ++i) {
-            double t = t_gap * i;
-            result_at_t[i] = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
-
-            std::cout << "Done : " << image_index << " - " << t << "\n";
-          }
-
-          for (const cv::Mat &frame : result_at_t) {
-            result_video_writer.write(frame);
-          }
-
-          //for (size_t i = 0; i < result_at_t.size(); ++i) {
-          //  if (!i) {
-          //    if (image_index == 1) {
-          //      result_video_writer.write(result_at_t[i]);
-          //    }
-          //  } else {
-          //    for (double delta_t = INTERPOLATION_GAP; delta_t <= 1; delta_t += INTERPOLATION_GAP) {
-          //      cv::Mat interpolated_image;
-          //      cv::addWeighted(result_at_t[i - 1], (1 - delta_t), result_at_t[i], delta_t, 0.0, interpolated_image);
-          //      result_video_writer.write(interpolated_image);
-          //    }
-          //  }
-          //}
-        }
-
-        //for (double t = 0; t <= 1; t += t_gap) {
-        //  cv::Mat result_at_t = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
-
-        //  result_video_writer.write(result_at_t);
-        //}
-
-        std::cout << "Done.\n";
+        std::string file_path = msclr::interop::marshal_as<std::string>(save_video_file_dialog->FileName);
+        SaveResult(file_path);
       }
 
     } else if (sender == clear_features_button_) {
@@ -178,8 +228,8 @@ namespace ImageMorphing {
       save_features_file_dialog->Title = "Save a features file.";
 
       if (save_features_file_dialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-        std::string raw_file_path = msclr::interop::marshal_as<std::string>(save_features_file_dialog->FileName);
-        SaveFeatures(raw_file_path);
+        std::string file_path = msclr::interop::marshal_as<std::string>(save_features_file_dialog->FileName);
+        SaveFeatures(file_path);
       }
     }
   }
@@ -227,6 +277,36 @@ namespace ImageMorphing {
         }
       }
     }
+  }
+
+  void ApplicationForm::AddImage(System::String ^file_path) {
+    System::Windows::Forms::PictureBox ^new_picture_box = gcnew System::Windows::Forms::PictureBox();
+
+    new_picture_box->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
+    new_picture_box->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseMove);
+    new_picture_box->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &ImageMorphing::ApplicationForm::OnMouseDown);
+
+    this->picture_box_panel_->Controls->Add(new_picture_box);
+
+    picture_boxes->Add(new_picture_box);
+
+    source_images.resize(picture_boxes->Count);
+    resized_images.resize(picture_boxes->Count);
+    images_with_feature_lines.resize(picture_boxes->Count);
+    feature_lines_of_images.resize(picture_boxes->Count);
+    last_feature_line_of_images.resize(picture_boxes->Count);
+    is_drawing_feature_of_images.resize(picture_boxes->Count);
+
+    Bitmap ^source_bitmap = gcnew Bitmap(file_path);
+    new_picture_box->Image = source_bitmap;
+
+    source_images[source_images.size() - 1] = cv::imread(msclr::interop::marshal_as<std::string>(file_path));
+
+    if (picture_boxes->Count >= 2) {
+      start_button_->Enabled = true;
+    }
+
+    AdjustImagesSize();
   }
 
   void ApplicationForm::AdjustImagesSize() {
@@ -292,12 +372,13 @@ namespace ImageMorphing {
         const auto &feature_line = feature_lines_of_images[i][j];
         cv::arrowedLine(images_with_feature_lines[i], feature_line.first, feature_line.second, feature_colors[j], FEATURE_LINE_THICKNESS);
       }
+      delete picture_boxes[i]->Image;
       picture_boxes[i]->Image = CVMatToBitmap(images_with_feature_lines[i]);
     }
   }
 
   System::Drawing::Bitmap ^ApplicationForm::CVMatToBitmap(const cv::Mat &mat) {
-    //return gcnew System::Drawing::Bitmap(mat.cols, mat.rows, mat.step, System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr)mat.bitmap_data);
+    //return gcnew System::Drawing::Bitmap(mat.cols, mat.rows, mat.step, System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr)mat.data);
 
     if (mat.type() != CV_8UC3) {
       throw gcnew NotSupportedException("Only images of type CV_8UC3 are supported for conversion to Bitmap");
@@ -365,10 +446,76 @@ namespace ImageMorphing {
     }
   }
 
+  void ApplicationForm::SaveResult(const std::string &file_path) {
+    std::vector<std::pair<cv::Point2d, cv::Point2d> > &max_amount_features_lines = feature_lines_of_images[0];
+
+    for (const auto &features_lines : feature_lines_of_images) {
+      if (features_lines.size() > max_amount_features_lines.size()) {
+        max_amount_features_lines = features_lines;
+      }
+    }
+
+    for (auto &features_lines : feature_lines_of_images) {
+      for (size_t i = features_lines.size(); i < max_amount_features_lines.size(); ++i) {
+        features_lines.push_back(max_amount_features_lines[i]);
+      }
+    }
+
+    const double FPS = 30;
+
+    const size_t FRAME_COUNT = System::Decimal::ToInt32(morphing_steps_numeric_up_down_->Value);
+
+    const size_t INTERPOLATION_FRAME_COUNT = 5;
+    const double INTERPOLATION_GAP = 1.0 / (double)INTERPOLATION_FRAME_COUNT;
+
+    cv::VideoWriter result_video_writer;
+
+    result_video_writer.open(file_path, CV_FOURCC('M', 'J', 'P', 'G'), FPS, resized_images[0].size());
+
+    size_t f = 0;
+    for (size_t image_index = 1; image_index < source_images.size(); ++image_index) {
+
+      double t_gap = 1.0 / (double)FRAME_COUNT;
+
+      for (size_t frame_index = !(image_index == 1); frame_index <= FRAME_COUNT; ++frame_index) {
+        double t = t_gap * frame_index;
+        cv::Mat frame_at_t = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
+
+        cv::imwrite(std::to_string(image_index) + "_" + std::to_string(f++) + ".jpg", frame_at_t);
+        result_video_writer.write(frame_at_t);
+
+        std::cout << "Done : " << image_index << " - " << t << "\n";
+      }
+
+      //for (size_t i = 0; i < result_at_t.size(); ++i) {
+      //  if (!i) {
+      //    if (image_index == 1) {
+      //      result_video_writer.write(result_at_t[i]);
+      //    }
+      //  } else {
+      //    for (double delta_t = INTERPOLATION_GAP; delta_t <= 1; delta_t += INTERPOLATION_GAP) {
+      //      cv::Mat interpolated_image;
+      //      cv::addWeighted(result_at_t[i - 1], (1 - delta_t), result_at_t[i], delta_t, 0.0, interpolated_image);
+      //      result_video_writer.write(interpolated_image);
+      //    }
+      //  }
+      //}
+    }
+
+    //for (double t = 0; t <= 1; t += t_gap) {
+    //  cv::Mat result_at_t = Morphing(resized_source_image, resized_destination_image, t, source_feature_lines, destination_feature_lines, 1, 2, 0);
+
+    //  result_video_writer.write(result_at_t);
+    //}
+
+    std::cout << "Done.\n";
+  }
+
   void ApplicationForm::Test() {
-    //original_source_image = cv::imread("..//data//image038.jpg");
-    //original_destination_image = cv::imread("..//data//image036.jpg");
-    //AdjustImagesSize();
-    //LoadFeatures("..//data//features.txt");
+    AddImage("..//data//Ted.jpg");
+    AddImage("..//data//Hillary.jpg");
+    AddImage("..//data//Trump.jpg");
+    LoadFeatures("..//data//tht.txt");
+    //SaveResult("..//data//test.avi");
   }
 }
