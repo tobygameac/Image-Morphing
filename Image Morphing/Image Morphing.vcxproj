@@ -118,10 +118,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>concert.lib;cplex1260.lib;glew32.lib;ilocplex.lib;opencv_ts300.lib;opencv_world300.lib</AdditionalDependencies>
+      <AdditionalDependencies>concert.lib;cplex1260.lib;glew32.lib;ilocplex.lib;opencv_ts300.lib;opencv_world300.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
@@ -152,6 +153,9 @@
     <ClInclude Include="application_form.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="gl_mesh.h" />
+    <ClInclude Include="gl_texture.h" />
+    <ClInclude Include="graph.h" />
     <ClInclude Include="morphing.h" />
     <ClInclude Include="warping.h" />
   </ItemGroup>
@@ -159,6 +163,10 @@
     <EmbeddedResource Include="application_form.resx">
       <DependentUpon>application_form.h</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vertex_shader.glsl" />
+    <None Include="fragment_shader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
