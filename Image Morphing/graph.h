@@ -41,6 +41,11 @@ public:
   Graph(std::vector<T> &vertices, std::vector<Edge> &edges) : vertices_(vertices), edges_(edges) {
   }
 
+  void Clear() {
+    vertices_.clear();
+    edges_.clear();
+  }
+
   std::vector<T> vertices_;
   std::vector<Edge> edges_;
 };

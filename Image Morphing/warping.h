@@ -95,14 +95,14 @@ namespace ImageMorphing {
     const std::vector<std::pair<cv::Point2d, cv::Point2d> > &destination_feature_lines,
     const double a, const double b, const double p) {
 
-    cv::Mat warpped_image = source_image.clone();
+    cv::Mat warped_image = source_image.clone();
 
 #pragma omp parallel for
-    for (int r = 0; r < warpped_image.rows; ++r) {
+    for (int r = 0; r < warped_image.rows; ++r) {
 #pragma omp parallel for
-      for (int c = 0; c < warpped_image.cols; ++c) {
+      for (int c = 0; c < warped_image.cols; ++c) {
 
-        cv::Vec3d total_warpped_color(0, 0, 0);
+        cv::Vec3d total_warped_color(0, 0, 0);
 
         std::vector<double> lines_weight(destination_feature_lines.size());
         double weight_sum = 0;
@@ -116,7 +116,7 @@ namespace ImageMorphing {
 
           cv::Point2d p_q_prime = source_feature_lines[i].second - source_feature_lines[i].first;
 
-          cv::Point2d warpped_position = source_feature_lines[i].first + u * p_q_prime + v * Perpendicular(p_q_prime) / LineLength(source_feature_lines[i]);
+          cv::Point2d warped_position = source_feature_lines[i].first + u * p_q_prime + v * Perpendicular(p_q_prime) / LineLength(source_feature_lines[i]);
 
           double distance_with_line = std::abs(v);
 
@@ -131,26 +131,26 @@ namespace ImageMorphing {
           lines_weight[i] = std::pow(std::pow(LineLength(destination_feature_lines[i]), p) / (a + distance_with_line), b);
           weight_sum += lines_weight[i];
 
-          cv::Vec3d warpped_color(0, 0, 0);
+          cv::Vec3d warped_color(0, 0, 0);
 
-          warpped_position.x = std::max(0.0, warpped_position.x);
-          warpped_position.x = std::min(source_image.cols - 1.0, warpped_position.x);
+          warped_position.x = std::max(0.0, warped_position.x);
+          warped_position.x = std::min(source_image.cols - 1.0, warped_position.x);
 
-          warpped_position.y = std::max(0.0, warpped_position.y);
-          warpped_position.y = std::min(source_image.rows - 1.0, warpped_position.y);
+          warped_position.y = std::max(0.0, warped_position.y);
+          warped_position.y = std::min(source_image.rows - 1.0, warped_position.y);
 
-          warpped_color = BilinearInterpolationPixelValue(source_image, warpped_position);
+          warped_color = BilinearInterpolationPixelValue(source_image, warped_position);
 
-          total_warpped_color += warpped_color * lines_weight[i];
+          total_warped_color += warped_color * lines_weight[i];
         }
 
-        total_warpped_color /= weight_sum;
+        total_warped_color /= weight_sum;
 
-        warpped_image.at<cv::Vec3b>(r, c) = total_warpped_color;
+        warped_image.at<cv::Vec3b>(r, c) = total_warped_color;
       }
     }
 
-    return warpped_image;
+    return warped_image;
   }
 
   void BuildGridMeshAndGraphForImage(const cv::Mat &image, GLMesh &target_mesh, Graph<glm::vec2> &target_graph, float grid_size) {
@@ -271,8 +271,8 @@ namespace ImageMorphing {
       }
     }
 
-    const double GRID_WEIGHT = 0.1;
-    const double WARPPED_POSITION_WEIGHT = 1;
+    const double GRID_WEIGHT = 0;
+    const double warpED_POSITION_WEIGHT = 1;
     const double TRANSFORMATION_WEIGHT = 1;
 
     for (const Edge &edge : image_graph.edges_) {
@@ -282,12 +282,16 @@ namespace ImageMorphing {
       glm::vec2 &v1 = image_graph.vertices_[v1_index];
       glm::vec2 &v2 = image_graph.vertices_[v2_index];
 
-      //expr += GRID_WEIGHT * IloPower((x[v1_index * 2] - x[v2_index * 2]) - (v1.x - v2.x), 2);
-      //expr += GRID_WEIGHT * IloPower((x[v1_index * 2 + 1] - x[v2_index * 2 + 1]) - (v1.y - v2.y), 2);
+      expr += GRID_WEIGHT * IloPower((x[v1_index * 2] - x[v2_index * 2]) - (v1.x - v2.x), 2);
+      expr += GRID_WEIGHT * IloPower((x[v1_index * 2 + 1] - x[v2_index * 2 + 1]) - (v1.y - v2.y), 2);
     }
 
     for (size_t j = 0; j < image_graph.vertices_.size(); ++j) {
       glm::vec2 &vertex = image_graph.vertices_[j];
+
+      std::vector<double> lines_weights;
+      std::vector<cv::Point2d> warped_positions;
+
       for (size_t i = 0; i < source_feature_lines.size(); ++i) {
         cv::Point2d p_x = (cv::Point2d(vertex.x, vertex.y) - source_feature_lines[i].first);
         cv::Point2d p_q = source_feature_lines[i].second - source_feature_lines[i].first;
@@ -297,7 +301,7 @@ namespace ImageMorphing {
 
         cv::Point2d p_q_prime = destination_feature_lines[i].second - destination_feature_lines[i].first;
 
-        cv::Point2d warpped_position = destination_feature_lines[i].first + u * p_q_prime + v * Perpendicular(p_q_prime) / LineLength(destination_feature_lines[i]);
+        cv::Point2d warped_position = destination_feature_lines[i].first + u * p_q_prime + v * Perpendicular(p_q_prime) / LineLength(destination_feature_lines[i]);
 
         double distance_with_line = std::abs(v);
 
@@ -311,76 +315,90 @@ namespace ImageMorphing {
 
         double lines_weight = std::pow(std::pow(LineLength(source_feature_lines[i]), p) / (a + distance_with_line), b);
 
-        warpped_position.x = std::max(0.0, warpped_position.x);
-        warpped_position.x = std::min(source_image.cols - 1.0, warpped_position.x);
+        warped_position.x = std::max(0.0, warped_position.x);
+        warped_position.x = std::min(source_image.cols - 1.0, warped_position.x);
 
-        warpped_position.y = std::max(0.0, warpped_position.y);
-        warpped_position.y = std::min(source_image.rows - 1.0, warpped_position.y);
+        warped_position.y = std::max(0.0, warped_position.y);
+        warped_position.y = std::min(source_image.rows - 1.0, warped_position.y);
 
-        expr += WARPPED_POSITION_WEIGHT * lines_weight * IloPower(x[j * 2] - warpped_position.x, 2);
-        expr += WARPPED_POSITION_WEIGHT * lines_weight * IloPower(x[j * 2 + 1] - warpped_position.y, 2);
+        lines_weights.push_back(lines_weight);
+        warped_positions.push_back(warped_position);
+
+        //expr += warpED_POSITION_WEIGHT * lines_weight * IloPower(x[j * 2] - warped_position.x, 2);
+        //expr += warpED_POSITION_WEIGHT * lines_weight * IloPower(x[j * 2 + 1] - warped_position.y, 2);
       }
+
+      double weight_sum = 0;
+      for (double &weight : lines_weights) {
+        weight_sum += weight;
+      }
+
+      cv::Point2d warped_position(0, 0);
+      for (size_t k = 0; k < warped_positions.size(); ++k) {
+        warped_position += lines_weights[k] / weight_sum * warped_positions[k];
+      }
+      expr += warpED_POSITION_WEIGHT * IloPower(x[j * 2] - warped_position.x, 2);
+      expr += warpED_POSITION_WEIGHT * IloPower(x[j * 2 + 1] - warped_position.y, 2);
     }
 
     // Maintain the transformation between edge and feature line
     // This term isn't that good so far
-    for (const Edge &edge : image_graph.edges_) {
-      break;
-      for (size_t i = 0; i < destination_feature_lines.size(); ++i) {
+    //for (const Edge &edge : image_graph.edges_) {
+    //  for (size_t i = 0; i < destination_feature_lines.size(); ++i) {
 
-        double c_x = source_feature_lines[i].first.x - source_feature_lines[i].second.x;
-        double c_y = source_feature_lines[i].first.y - source_feature_lines[i].second.y;
+    //    double c_x = source_feature_lines[i].first.x - source_feature_lines[i].second.x;
+    //    double c_y = source_feature_lines[i].first.y - source_feature_lines[i].second.y;
 
-        double original_matrix_a = c_x;
-        double original_matrix_b = c_y;
-        double original_matrix_c = c_y;
-        double original_matrix_d = -c_x;
+    //    double original_matrix_a = c_x;
+    //    double original_matrix_b = c_y;
+    //    double original_matrix_c = c_y;
+    //    double original_matrix_d = -c_x;
 
-        double matrix_rank = original_matrix_a * original_matrix_d - original_matrix_b * original_matrix_c;
+    //    double matrix_rank = original_matrix_a * original_matrix_d - original_matrix_b * original_matrix_c;
 
-        if (fabs(matrix_rank) <= 1e-9) {
-          matrix_rank = (matrix_rank > 0 ? 1 : -1) * 1e-9;
-        }
+    //    if (fabs(matrix_rank) <= 1e-9) {
+    //      matrix_rank = (matrix_rank > 0 ? 1 : -1) * 1e-9;
+    //    }
 
-        double matrix_a = original_matrix_d / matrix_rank;
-        double matrix_b = -original_matrix_b / matrix_rank;
-        double matrix_c = -original_matrix_c / matrix_rank;
-        double matrix_d = original_matrix_a / matrix_rank;
+    //    double matrix_a = original_matrix_d / matrix_rank;
+    //    double matrix_b = -original_matrix_b / matrix_rank;
+    //    double matrix_c = -original_matrix_c / matrix_rank;
+    //    double matrix_d = original_matrix_a / matrix_rank;
 
-        const glm::vec2 &v_1 = image_graph.vertices_[edge.edge_indices_pair_.first];
-        const glm::vec2 &v_2 = image_graph.vertices_[edge.edge_indices_pair_.second];
+    //    const glm::vec2 &v_1 = image_graph.vertices_[edge.edge_indices_pair_.first];
+    //    const glm::vec2 &v_2 = image_graph.vertices_[edge.edge_indices_pair_.second];
 
-        double e_x = v_1.x - v_2.x;
-        double e_y = v_1.y - v_2.y;
+    //    double e_x = v_1.x - v_2.x;
+    //    double e_y = v_1.y - v_2.y;
 
-        double t_s = matrix_a * e_x + matrix_b * e_y;
-        double t_r = matrix_c * e_x + matrix_d * e_y;
+    //    double t_s = matrix_a * e_x + matrix_b * e_y;
+    //    double t_r = matrix_c * e_x + matrix_d * e_y;
 
-        glm::vec2 edge_midpoint = (v_1 + v_2) / 2.0f;
+    //    glm::vec2 edge_midpoint = (v_1 + v_2) / 2.0f;
 
-        glm::vec2 source_v_1(source_feature_lines[i].first.x, source_feature_lines[i].first.y);
-        glm::vec2 source_v_2(source_feature_lines[i].second.x, source_feature_lines[i].second.y);
-        glm::vec2 source_midpoint = (source_v_1 + source_v_2) / 2.0f;
+    //    glm::vec2 source_v_1(source_feature_lines[i].first.x, source_feature_lines[i].first.y);
+    //    glm::vec2 source_v_2(source_feature_lines[i].second.x, source_feature_lines[i].second.y);
+    //    glm::vec2 source_midpoint = (source_v_1 + source_v_2) / 2.0f;
 
-        double distance_with_line = std::sqrt(std::pow(source_midpoint.x - edge_midpoint.x, 2.0) + std::pow(source_midpoint.y - edge_midpoint.y, 2.0));
-        double lines_weight = std::pow(std::pow(LineLength(destination_feature_lines[i]), p) / (a + distance_with_line), b);
+    //    double distance_with_line = std::sqrt(std::pow(source_midpoint.x - edge_midpoint.x, 2.0) + std::pow(source_midpoint.y - edge_midpoint.y, 2.0));
+    //    double lines_weight = std::pow(std::pow(LineLength(destination_feature_lines[i]), p) / (a + distance_with_line), b);
 
-        glm::vec2 destination_v_1(destination_feature_lines[i].first.x, destination_feature_lines[i].first.y);
-        glm::vec2 destination_v_2(destination_feature_lines[i].second.x, destination_feature_lines[i].second.y);
-        glm::vec2 destination_midpoint = (destination_v_1 + destination_v_2) / 2.0f;
+    //    glm::vec2 destination_v_1(destination_feature_lines[i].first.x, destination_feature_lines[i].first.y);
+    //    glm::vec2 destination_v_2(destination_feature_lines[i].second.x, destination_feature_lines[i].second.y);
+    //    glm::vec2 destination_midpoint = (destination_v_1 + destination_v_2) / 2.0f;
 
-        double d_x = destination_v_1.x - destination_v_2.x;
-        double d_y = destination_v_1.y - destination_v_2.y;
+    //    double d_x = destination_v_1.x - destination_v_2.x;
+    //    double d_y = destination_v_1.y - destination_v_2.y;
 
-        expr += TRANSFORMATION_WEIGHT * lines_weight *
-          IloPower((x[edge.edge_indices_pair_.first * 2] - x[edge.edge_indices_pair_.second * 2]) -
-            (t_s * d_x + t_r * d_y), 2);
+    //    expr += TRANSFORMATION_WEIGHT * lines_weight *
+    //      IloPower((x[edge.edge_indices_pair_.first * 2] - x[edge.edge_indices_pair_.second * 2]) -
+    //      (t_s * d_x + t_r * d_y), 2);
 
-        expr += TRANSFORMATION_WEIGHT * lines_weight *
-          IloPower((x[edge.edge_indices_pair_.first * 2 + 1] - x[edge.edge_indices_pair_.second * 2 + 1]) -
-            (-t_r * d_x + t_s * d_y), 2);
-      }
-    }
+    //    expr += TRANSFORMATION_WEIGHT * lines_weight *
+    //      IloPower((x[edge.edge_indices_pair_.first * 2 + 1] - x[edge.edge_indices_pair_.second * 2 + 1]) -
+    //      (-t_r * d_x + t_s * d_y), 2);
+    //  }
+    //}
 
     IloModel model(env);
 
@@ -477,10 +495,10 @@ namespace ImageMorphing {
     cv::Mat buffer_image(source_image.rows, source_image.cols, CV_8UC3, &screen_image_data[0]);
     cv::flip(buffer_image, buffer_image, 0);
 
-    cv::Mat warpped_image = buffer_image.clone();
+    cv::Mat warped_image = buffer_image.clone();
 
     glBindFramebuffer(GL_FRAMEBUFFER, old_frame_buffer);
 
-    return warpped_image;
+    return warped_image;
   }
 }

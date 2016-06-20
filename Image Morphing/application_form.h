@@ -24,8 +24,8 @@ namespace ImageMorphing {
   static HDC hdc;
   static HGLRC hrc;
 
-  const std::string DEFAULT_VERTEX_SHADER_FILE_PATH = "vertex_shader.glsl";
-  const std::string DEFAULT_FRAGMENT_SHADER_FILE_PATH = "fragment_shader.glsl";
+  const std::string DEFAULT_VERTEX_SHADER_FILE_PATH = "..\\shader\\vertex_shader.glsl";
+  const std::string DEFAULT_FRAGMENT_SHADER_FILE_PATH = "..\\shader\\fragment_shader.glsl";
 
   const std::string SHADER_ATTRIBUTE_VERTEX_POSITION_NAME = "vertex_position";
   const std::string SHADER_ATTRIBUTE_VERTEX_COLOR_NAME = "vertex_color";

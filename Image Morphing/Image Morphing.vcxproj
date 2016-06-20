@@ -165,8 +165,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vertex_shader.glsl" />
-    <None Include="fragment_shader.glsl" />
+    <None Include="..\shader\fragment_shader.glsl" />
+    <None Include="..\shader\vertex_shader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

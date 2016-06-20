@@ -27,7 +27,7 @@ namespace ImageMorphing {
 
     srand(time(0));
 
-    Test();
+    //Test();
   }
 
   ApplicationForm::~ApplicationForm() {
@@ -470,7 +470,7 @@ namespace ImageMorphing {
 
     cv::VideoWriter result_video_writer;
 
-    result_video_writer.open(file_path, CV_FOURCC('M', 'J', 'P', 'G'), FPS, resized_images[0].size());
+    result_video_writer.open(file_path, CV_FOURCC('D', 'I', 'V', 'X'), FPS, resized_images[0].size());
 
     size_t f = 0;
     for (size_t image_index = 1; image_index < source_images.size(); ++image_index) {
@@ -479,9 +479,20 @@ namespace ImageMorphing {
 
       for (size_t frame_index = !(image_index == 1); frame_index <= FRAME_COUNT; ++frame_index) {
         double t = t_gap * frame_index;
-        cv::Mat frame_at_t = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0).clone();
+        cv::Mat frame_at_t = Morphing(resized_images[image_index - 1], resized_images[image_index], t, feature_lines_of_images[image_index - 1], feature_lines_of_images[image_index], 1, 2, 0);
 
-        cv::imwrite(std::to_string(image_index) + "_" + std::to_string(f++) + ".jpg", frame_at_t);
+        //frame_at_t = cv::Mat::zeros(frame_at_t.size(), frame_at_t.type());
+
+        // Draw feature lines in the result frame
+
+        //for (size_t j = 0; j < feature_lines_of_images[image_index - 1].size(); ++j) {
+        //  const auto &feature_line = LineInterpolation(feature_lines_of_images[image_index][j], feature_lines_of_images[image_index - 1][j], 1 - t);
+        //  cv::arrowedLine(frame_at_t, feature_line.first, feature_line.second, feature_colors[j], FEATURE_LINE_THICKNESS);
+        //}
+
+        // Ouput each frame as an image
+
+        //cv::imwrite(std::to_string(image_index) + "_" + std::to_string(f++) + ".jpg", frame_at_t);
         result_video_writer.write(frame_at_t);
 
         std::cout << "Done : " << image_index << " - " << t << "\n";

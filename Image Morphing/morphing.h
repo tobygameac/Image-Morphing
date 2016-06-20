@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <glm\glm.hpp>
 #include <omp.h>
 #include <opencv\cv.hpp>
 
@@ -54,22 +55,23 @@ namespace ImageMorphing {
       feature_lines_at_t[i] = LineInterpolation(source_feature_lines[i], destination_feature_lines[i], t);
     }
 
-    //cv::Mat warpped_source_image = ImageWarping(source_image, source_feature_lines, feature_lines_at_t, a, b, p);
-    cv::Mat warpped_source_image = ImageWarpingWithMeshOptimization(source_image, source_feature_lines, feature_lines_at_t, a, b, p, 20);
-    //cv::Mat warpped_destination_image = ImageWarping(destination_image, destination_feature_lines, feature_lines_at_t, a, b, p);
-    cv::Mat warpped_destination_image = ImageWarpingWithMeshOptimization(destination_image, destination_feature_lines, feature_lines_at_t, a, b, p, 20);
+    //cv::Mat warped_source_image = ImageWarping(source_image, source_feature_lines, feature_lines_at_t, a, b, p);
+    cv::Mat warped_source_image = ImageWarpingWithMeshOptimization(source_image, source_feature_lines, feature_lines_at_t, a, b, p, 20);
+    //cv::Mat warped_destination_image = ImageWarping(destination_image, destination_feature_lines, feature_lines_at_t, a, b, p);
+    cv::Mat warped_destination_image = ImageWarpingWithMeshOptimization(destination_image, destination_feature_lines, feature_lines_at_t, a, b, p, 20);
 
     cv::Mat result_image(source_image.size(), source_image.type());
 
-    //return warpped_source_image;
+    //return warped_source_image;
 
-    //return warpped_destination_image;
+    //return warped_destination_image;
 
 #pragma omp parallel for
     for (int r = 0; r < result_image.rows; ++r) {
 #pragma omp parallel for
       for (int c = 0; c < result_image.cols; ++c) {
-        result_image.at<cv::Vec3b>(r, c) = (cv::Vec3d)warpped_source_image.at<cv::Vec3b>(r, c) * (1 - t) + (cv::Vec3d)warpped_destination_image.at<cv::Vec3b>(r, c) * (t);
+        result_image.at<cv::Vec3b>(r, c) = (cv::Vec3d)warped_source_image.at<cv::Vec3b>(r, c) * (1 - t) + (cv::Vec3d)warped_destination_image.at<cv::Vec3b>(r, c) * (t);
+        //result_image.at<cv::Vec3b>(r, c) = (cv::Vec3d)warped_destination_image.at<cv::Vec3b>(r, c);
       }
     }
 
